@@ -1,6 +1,7 @@
 """filecontroller"""
 from logging import Logger
 from pathlib import Path
+from tkinter import N
 
 from tqdm import tqdm
 from kjmarotools.basics import filetools, ostools
@@ -56,7 +57,7 @@ class FileController:
         for file in tqdm(files_in_path):
             paths.append(file)
             names.append(file.name)
-            md5s.append(ostools.md5checksum(file))
+            md5s.append(ostools.md5checksum(file, 2**26))
 
         self.current_database = Kdatabase(tuple(
             paths), tuple(names), tuple(md5s))
@@ -129,11 +130,13 @@ class FileController:
         """
         KdtbTools.save_database(self.current_database, self.database_file)
 
-    def run(self, embedded=False) -> bool:
+    def run(self, embedded=False, skip_dtb_updates=False) -> bool:
         """
         ----------------------------------------------------------------------
         Execute FileController with the defined configuration
         - embedded: It won't stop after the execution
+        - skip_dtb_updates: If this is enabled the database is not updated
+                            after the execution of run().
         ----------------------------------------------------------------------
         return:
             - True: Files deleted found
@@ -148,7 +151,8 @@ class FileController:
         self.load_and_create_current_database()
         self.find_new_and_lost_files_since_last_execution()
         self.try_to_find_deleted_files()
-        self.update_the_database_file()
+        if not skip_dtb_updates:
+            self.update_the_database_file()
 
         if not embedded:
             if len(self.files_lost.md5s) > 0:
