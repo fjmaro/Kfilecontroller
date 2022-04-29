@@ -131,7 +131,8 @@ class FileController:
 
                 info_msg = "[FLC] [ProbablyFound]                %s | %s"
                 for jdx, filematched in enumerate(match_paths):
-                    txt_msg = f"(Matching {jdx + 1} of {len(match_paths)})"
+                    txt_msg = "(File matching "
+                    txt_msg += f"{jdx + 1} of {len(match_paths)})"
                     txt_msg = " " * (len(md5val) - len(txt_msg)) + txt_msg
                     self.log.info(info_msg, txt_msg, filematched)
 
