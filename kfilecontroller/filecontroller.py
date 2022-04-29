@@ -19,10 +19,12 @@ class FileController:
     def __init__(self, base_path2scan: Path, database_file: Path,
                  logger: Logger, fold_patterns: tuple[str, ...] = ()) -> None:
 
+        dtx = ".npy"
         self.base_path2scan = base_path2scan
-        self.database_file = database_file
+        self.database_file = database_file.with_name(database_file.name + dtx)
         self.fld_patterns = fold_patterns
         self.log = logger
+        self.ckh = 2**26
 
         # Class database loaded and updated
         self.current_database: Kdatabase
@@ -39,12 +41,12 @@ class FileController:
         Load the database file and analyse the path to create the current one
         ----------------------------------------------------------------------
         """
-        self.log.info(f"{self.__phs}Generating current files dabase...")
+        self.log.info(f"{self.__phs}Loading current files tree...")
         if self.database_file.exists():
             self.loaded_database = KdtbTools.load_database(self.database_file)
         else:
             self.loaded_database = Kdatabase((), (), ())
-
+        print(self.loaded_database.md5s)
         folders2scan = filetools.get_folders_tree(self.base_path2scan,
                                                   self.fld_patterns)
         files_in_path = filetools.get_files_tree(folders2scan)
@@ -52,11 +54,10 @@ class FileController:
         md5s: list[str] = []
         names: list[str] = []
         paths: list[Path] = []
-
-        for file in tqdm(files_in_path):
+        for file in files_in_path:
             paths.append(file)
             names.append(file.name)
-            md5s.append(ostools.md5checksum(file, 2**26))
+            md5s.append("")
 
         self.current_database = Kdatabase(tuple(
             paths), tuple(names), tuple(md5s))
@@ -67,29 +68,35 @@ class FileController:
         Get the files lost and added since last execution
         ----------------------------------------------------------------------
         """
-        self.log.info(f"{self.__phs}Finding files added and removed...")
-
-        new_md5s: list[str] = []
-        new_names: list[str] = []
+        self.log.info(f"{self.__phs}Finding new files added...")
         new_paths: list[Path] = []
-        for idx, this_path in enumerate(self.current_database.paths):
+        new_names: list[str] = []
+        new_md5s: list[str] = []
+        for idx, this_path in enumerate(tqdm(self.current_database.paths)):
             if this_path not in self.loaded_database.paths:
                 new_paths.append(this_path)
                 new_names.append(self.current_database.names[idx])
-                new_md5s.append(self.current_database.md5s[idx])
+                new_md5s.append(ostools.md5checksum(this_path, self.ckh))
 
-        del_md5s: list[str] = []
-        del_names: list[str] = []
+        for idx, crpath in enumerate(new_paths):
+            self.log.info("[FLC] [FileAdded]: %s | %s", new_md5s[idx],
+                          crpath.relative_to(self.base_path2scan))
+
+        self.log.info(f"{self.__phs}Finding deleted files...")
         del_paths: list[Path] = []
-        for idx, this_path in enumerate(self.loaded_database.paths):
+        del_names: list[str] = []
+        del_md5s: list[str] = []
+        for idx, this_path in enumerate(tqdm(self.loaded_database.paths)):
             if this_path not in self.current_database.paths:
                 del_paths.append(this_path)
-                del_names.append(self.current_database.names[idx])
-                del_md5s.append(self.current_database.md5s[idx])
-                self.log.warning("[FLC] [FileDeleted]: %s | %s | %s",
-                                 del_md5s[-1],
-                                 del_names[-1], str(del_paths[-1].relative_to(
-                                     self.base_path2scan)))
+                del_names.append(self.loaded_database.names[idx])
+                del_md5s.append(self.loaded_database.md5s[idx])
+
+        for idx, crpath in enumerate(del_paths):
+            self.log.warning("[FLC] [FileDeleted]: %s | %s | %s",
+                             del_md5s[idx], del_names[idx],
+                             str(del_paths[idx].relative_to(
+                                 self.base_path2scan)))
 
         self.log.info(f"{self.__res}New files found = %s",
                       str(len(new_names)))
@@ -108,9 +115,11 @@ class FileController:
         ----------------------------------------------------------------------
         """
         self.log.info(f"{self.__phs}Finding deleted files in given path...")
+        probably_found = 0
         for idx, md5val in enumerate(self.files_lost.md5s):
             if md5val in self.files_added.md5s:
                 match_paths: list[str] = []
+                probably_found += 1
 
                 for jdx, jmd5val in self.files_added.md5s:
                     if jmd5val == md5val:
@@ -121,12 +130,25 @@ class FileController:
                               self.files_lost.paths[idx],
                               str(match_paths))
 
+        self.log.info(f"{self.__res}Files lost matching MD5 found = %s",
+                      probably_found)
+
     def update_the_database_file(self):
         """
         ----------------------------------------------------------------------
         Update the database file with the current information
         ----------------------------------------------------------------------
         """
+        self.log.info(f"{self.__phs}Updating system database...")
+        paths: list[Path] = []
+        names: list[str] = []
+        md5s: list[str] = []
+        for file in tqdm(self.current_database.paths):
+            paths.append(file)
+            names.append(file.name)
+            md5s.append(ostools.md5checksum(file, self.ckh))
+        self.current_database = Kdatabase(tuple(
+            paths), tuple(names), tuple(md5s))
         KdtbTools.save_database(self.current_database, self.database_file)
 
     def run(self, embedded=False, skip_dtb_updates=False) -> bool:
@@ -145,7 +167,8 @@ class FileController:
         self.log.info("[FLC] <INIT> FileController initialized ...")
         self.log.info(f"[FLC] <CNFG> base_path2scan = {self.base_path2scan}")
         self.log.info(f"[FLC] <CNFG> fld_patterns = {self.fld_patterns}")
-        self.log.info("[FLC] <TAGS> [FileDeleted] [ProbablyFound]")
+        self.log.info(
+            "[FLC] <TAGS> [FileAdded] [FileDeleted] [ProbablyFound]")
 
         self.load_and_create_current_database()
         self.find_new_and_lost_files_since_last_execution()
