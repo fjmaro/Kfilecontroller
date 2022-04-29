@@ -170,6 +170,7 @@ class FileController:
         ----------------------------------------------------------------------
         """
         self.log.info("[FLC] <INIT> FileController initialized ...")
+        self.log.info(f"[FLC] <CNFG> autoupdate_dtb = {autoupdate_dtb}")
         self.log.info(f"[FLC] <CNFG> base_path2scan = {self.base_path2scan}")
         self.log.info(f"[FLC] <CNFG> fld_patterns = {self.fld_patterns}")
         self.log.info(
