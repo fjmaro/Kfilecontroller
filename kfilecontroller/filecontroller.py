@@ -38,7 +38,7 @@ class FileController:
     def load_and_create_current_database(self) -> None:
         """
         ----------------------------------------------------------------------
-        Load the database file and analyse the path to create the current one
+        Load the database file and analyse the path files tree
         ----------------------------------------------------------------------
         """
         self.log.info(f"{self.__phs}Loading current files tree...")
@@ -46,7 +46,7 @@ class FileController:
             self.loaded_database = KdtbTools.load_database(self.database_file)
         else:
             self.loaded_database = Kdatabase((), (), ())
-        print(self.loaded_database.md5s)
+
         folders2scan = filetools.get_folders_tree(self.base_path2scan,
                                                   self.fld_patterns)
         files_in_path = filetools.get_files_tree(folders2scan)
@@ -68,7 +68,7 @@ class FileController:
         Get the files lost and added since last execution
         ----------------------------------------------------------------------
         """
-        self.log.info(f"{self.__phs}Finding new files added...")
+        self.log.info(f"{self.__phs}Finding new files added and deleted...")
         new_paths: list[Path] = []
         new_names: list[str] = []
         new_md5s: list[str] = []
@@ -82,7 +82,6 @@ class FileController:
             self.log.info("[FLC] [FileAdded]: %s | %s", new_md5s[idx],
                           crpath.relative_to(self.base_path2scan))
 
-        self.log.info(f"{self.__phs}Finding deleted files...")
         del_paths: list[Path] = []
         del_names: list[str] = []
         del_md5s: list[str] = []
@@ -93,9 +92,8 @@ class FileController:
                 del_md5s.append(self.loaded_database.md5s[idx])
 
         for idx, crpath in enumerate(del_paths):
-            self.log.warning("[FLC] [FileDeleted]: %s | %s | %s",
-                             del_md5s[idx], del_names[idx],
-                             str(del_paths[idx].relative_to(
+            self.log.warning("[FLC] [FileDeleted]: %s | %s",
+                             del_md5s[idx], str(del_paths[idx].relative_to(
                                  self.base_path2scan)))
 
         self.log.info(f"{self.__res}New files found = %s",
@@ -115,23 +113,30 @@ class FileController:
         ----------------------------------------------------------------------
         """
         self.log.info(f"{self.__phs}Finding deleted files in given path...")
-        probably_found = 0
+        total_probably_found = 0
         for idx, md5val in enumerate(self.files_lost.md5s):
             if md5val in self.files_added.md5s:
                 match_paths: list[str] = []
-                probably_found += 1
+                total_probably_found += 1
 
-                for jdx, jmd5val in self.files_added.md5s:
+                self.log.info("[FLC] [ProbablyFound] For lost file: %s | %s",
+                              md5val, self.files_lost.paths[idx].relative_to(
+                                  self.base_path2scan))
+
+                for jdx, jmd5val in enumerate(self.files_added.md5s):
                     if jmd5val == md5val:
-                        match_paths.append(str(self.files_added.paths[jdx]))
+                        match_paths.append(
+                            self.files_added.paths[jdx].relative_to(
+                                self.base_path2scan))
 
-                fmsg = "[FLC] [ProbablyFound]: %s %s | LOST | %s | FOUND | %s"
-                self.log.info(fmsg, md5val, self.files_lost.names[idx],
-                              self.files_lost.paths[idx],
-                              str(match_paths))
+                info_msg = "[FLC] [ProbablyFound]                %s | %s"
+                for jdx, filematched in enumerate(match_paths):
+                    txt_msg = f"(Matching {jdx + 1} of {len(match_paths)})"
+                    txt_msg = " " * (len(md5val) - len(txt_msg)) + txt_msg
+                    self.log.info(info_msg, txt_msg, filematched)
 
-        self.log.info(f"{self.__res}Files lost matching MD5 found = %s",
-                      probably_found)
+        self.log.info(f"{self.__res}Files deleted matching MD5 found = %s",
+                      total_probably_found)
 
     def update_the_database_file(self):
         """
