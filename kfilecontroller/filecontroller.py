@@ -1,7 +1,6 @@
 """filecontroller"""
 from logging import Logger
 from pathlib import Path
-from tkinter import N
 
 from tqdm import tqdm
 from kjmarotools.basics import filetools, ostools
