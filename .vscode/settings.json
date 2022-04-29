@@ -1,0 +1,8 @@
+{
+    "python.linting.enabled": true,
+    "python.linting.mypyEnabled": true,
+    "python.linting.pylintEnabled": true,
+    "python.linting.pycodestyleEnabled": true,
+    "python.linting.pylintArgs": ["--max-line-length=79"],
+    "python.linting.pycodestyleArgs": ["--ignore=E501"]
+}
