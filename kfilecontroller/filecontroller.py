@@ -91,9 +91,9 @@ class FileController:
                                  del_names[-1], str(del_paths[-1].relative_to(
                                      self.base_path2scan)))
 
-        self.log.info(f"{self.__res} New files found = %s",
+        self.log.info(f"{self.__res}New files found = %s",
                       str(len(new_names)))
-        self.log.info(f"{self.__res} Files deleted found = %s",
+        self.log.info(f"{self.__res}Files deleted found = %s",
                       str(len(del_names)))
 
         self.files_added = Kdatabase(
@@ -119,7 +119,7 @@ class FileController:
                 fmsg = "[FLC] [ProbablyFound]: %s %s | LOST | %s | FOUND | %s"
                 self.log.info(fmsg, md5val, self.files_lost.names[idx],
                               self.files_lost.paths[idx],
-                              str([x for x in match_paths]))
+                              str(match_paths))
 
     def update_the_database_file(self):
         """
@@ -140,10 +140,10 @@ class FileController:
             - False: No deleted files are found
         ----------------------------------------------------------------------
         """
-        self.log.info("[MNT] <INIT> FileController initialized ...")
-        self.log.info(f"[MNT] <CNFG> base_path2scan = {self.base_path2scan}")
-        self.log.info(f"[MNT] <CNFG> fld_patterns = {self.fld_patterns}")
-        self.log.info("[MNT] <TAGS> [FileDeleted] [ProbablyFound]")
+        self.log.info("[FLC] <INIT> FileController initialized ...")
+        self.log.info(f"[FLC] <CNFG> base_path2scan = {self.base_path2scan}")
+        self.log.info(f"[FLC] <CNFG> fld_patterns = {self.fld_patterns}")
+        self.log.info("[FLC] <TAGS> [FileDeleted] [ProbablyFound]")
 
         self.load_and_create_current_database()
         self.find_new_and_lost_files_since_last_execution()
