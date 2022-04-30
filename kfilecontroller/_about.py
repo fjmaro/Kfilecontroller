@@ -23,7 +23,7 @@ PACKAGE_DATA: dict[str, list[str]] = {}
 
 # Python and package requirements
 PYTHON_REQUIRES = ">=3.9, <4"
-INSTALL_REQUIRES: list[str] = ['kjmarotools',
+INSTALL_REQUIRES: list[str] = ['kjmarotools @ git+https://github.com/fjmaro/Kjmarotools@main',
                                'numpy',
                                'tqdm']
 
