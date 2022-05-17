@@ -68,7 +68,7 @@ class FileController:
         Get the files lost and added since last execution
         ----------------------------------------------------------------------
         """
-        self.log.info(f"{self.__phs}Finding new files added and deleted...")
+        self.log.info(f"{self.__phs}Finding new files added to the system...")
         new_paths: list[Path] = []
         new_names: list[str] = []
         new_md5s: list[str] = []
@@ -82,6 +82,7 @@ class FileController:
             self.log.info("[FLC] [FileAdded]: %s | %s", new_md5s[idx],
                           crpath.relative_to(self.base_path2scan))
 
+        self.log.info(f"{self.__phs}Finding files deleted from the system...")
         del_paths: list[Path] = []
         del_names: list[str] = []
         del_md5s: list[str] = []
@@ -109,18 +110,21 @@ class FileController:
     def try_to_find_deleted_files(self):
         """
         ----------------------------------------------------------------------
-        Try to find the deleted files
+        Try to find the deleted files by looking into the new-added ones. This
+        means that the file was not deleted but renamed.
         ----------------------------------------------------------------------
         """
-        self.log.info(f"{self.__phs}Finding deleted files in given path...")
+        inf_msg = "Trying to find the deleted files in the system..."
+        self.log.info(f"{self.__phs}" + inf_msg)
         total_probably_found = 0
         for idx, md5val in enumerate(self.files_lost.md5s):
             if md5val in self.files_added.md5s:
                 match_paths: list[str] = []
                 total_probably_found += 1
 
-                self.log.info("[FLC] [ProbablyFound] For lost file: %s | %s",
-                              md5val, self.files_lost.paths[idx].relative_to(
+                inf_msg = "[FLC] [ProbablyFound] For deleted file: %s | %s"
+                self.log.info(inf_msg, md5val,
+                              self.files_lost.paths[idx].relative_to(
                                   self.base_path2scan))
 
                 for jdx, jmd5val in enumerate(self.files_added.md5s):
@@ -129,7 +133,7 @@ class FileController:
                             self.files_added.paths[jdx].relative_to(
                                 self.base_path2scan))
 
-                info_msg = "[FLC] [ProbablyFound]                %s | %s"
+                info_msg = "[FLC] [ProbablyFound]                   %s | %s"
                 for jdx, filematched in enumerate(match_paths):
                     txt_msg = "(File matching "
                     txt_msg += f"{jdx + 1} of {len(match_paths)})"
@@ -179,7 +183,9 @@ class FileController:
 
         self.load_and_create_current_database()
         self.find_new_and_lost_files_since_last_execution()
-        self.try_to_find_deleted_files()
+
+        if len(self.files_lost.md5s) > 0 and len(self.files_added.md5s) > 0:
+            self.try_to_find_deleted_files()
 
         if autoupdate_dtb:
             self.update_the_database_file()
